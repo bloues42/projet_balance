@@ -10,7 +10,8 @@
 #include <main.h>
 #include <chprintf.h>
 #include <motors.h>
-#include <gravity.h>
+//#include <gravity.h>
+#include <sensors/imu.h>
 //#include <msgbus/messagebus.h>
 
 //#include <pi_regulator.h>
@@ -80,9 +81,18 @@ int main(void)
 	//pi_regulator_start();
     //starts imu
     imu_start();
+
+
+/*
     messagebus_topic_t *imu_topic = messagebus_find_topic_blocking(&bus, "/imu");
     imu_compute_offset(imu_topic, NB_SAMPLES_OFFSET);
     imu_msg_t imu_values;
+*/
+    //calibrate acceleration sensor
+    calibrate_acc();
+
+
+
 	//calibrate IR proximity sensor
 	calibrate_ir();
 
@@ -104,10 +114,12 @@ int main(void)
     	//i++;
         chThdSleepMilliseconds(1000);
     */
-    	messagebus_topic_wait(imu_topic, &imu_values, sizeof(imu_values));
+    	float acc_x=0, acc_z=0;
+    	acc_x = get_acc(X_AXIS);
+    	acc_z = get_acc(Z_AXIS);
 
     	chprintf((BaseSequentialStream *)&SD3, "%Ax=%-7d Az=%-7d \r\n",
-    			imu_values.acceleration[X_AXIS], imu_values.acceleration[Z_AXIS]);
+    			acc_x, acc_z);
     	chThdSleepMilliseconds(400);
     }
 }
