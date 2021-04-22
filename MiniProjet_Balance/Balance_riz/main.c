@@ -10,9 +10,10 @@
 #include <main.h>
 #include <chprintf.h>
 #include <motors.h>
-//#include <gravity.h>
+#include <gravity.h>
 
 #include <sensors/imu.h>
+#include <leds.h>
 //#include <msgbus/messagebus.h>
 
 //#include <pi_regulator.h>
@@ -91,7 +92,8 @@ int main(void)
 */
     //calibrate acceleration sensor
     calibrate_acc();
-	palClearPad(GPIOB, GPIOB_LED_BODY);
+    get_accyz_offset();
+    set_body_led(1);
 
 	//calibrate IR proximity sensor
 	calibrate_ir();
@@ -99,9 +101,12 @@ int main(void)
 	uint32_t i = 0;
 	uint32_t dist_sensor0 = 0;
 
-    uint8_t speed = 10;
+    uint8_t speed = 200;
 	right_motor_set_speed(speed);
 	left_motor_set_speed(speed);
+
+    float acc_y = 0, acc_z = 0;
+    float grav_y = 0;
 
     while (1) {
 
@@ -114,13 +119,22 @@ int main(void)
     	//i++;
         chThdSleepMilliseconds(1000);
     */
-    	float acc_x=0, acc_z=0;
-    	acc_x = get_acc(X_AXIS);
-    	acc_z = get_acc(Z_AXIS);
 
-    	chprintf((BaseSequentialStream *)&SD3, "%Ax=%-7d Az=%-7d \r\n",
-    			acc_x, acc_z);
-    	chThdSleepMilliseconds(400);
+
+		acc_y = imu_compute_units(Y_AXIS); //get_acceleration(Y_AXIS); //
+		acc_z = imu_compute_units(Z_AXIS); //get_acceleration(Z_AXIS); //
+
+		grav_y = compute_direction(acc_y, acc_z);
+
+		if (i==5){
+			chprintf((BaseSequentialStream *)&SD3, "%Ay=%-7f Az=%-7f gravy=%-7f \r\n",
+					acc_y, acc_z, grav_y);
+
+			i=0;
+		}
+		i++;
+
+    	chThdSleepMilliseconds(300);
     }
 }
 
