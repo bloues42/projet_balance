@@ -1,4 +1,3 @@
-lib/
 MiniProjet_Balance/Balance_riz/*
 !MiniProjet_Balance/Balance_riz/*.c
 !MiniProjet_Balance/Balance_riz/*.h
