@@ -16,9 +16,10 @@
 #define ACC_RAW2G		(RES_2G / MAX_INT16)
 #define GYRO_RAW2DPS	(RES_250DPS / MAX_INT16)
 
-#define GRAV_Y_MARGE 0.1 	// TO CHANGE
+//#define GRAV_Y_MARGE 0.1 	// TO CHANGE -> already in pi regulator
 
 static int16_t acc_offset_y = 0, acc_offset_z = 0;
+static float grav_y;
 
 /***************************INTERNAL FUNCTIONS************************************/
 
@@ -28,16 +29,7 @@ static int16_t acc_offset_y = 0, acc_offset_z = 0;
  * 			RAW gyroscope to rad/s speed
  */
 
-
-void get_accyz_offset(void){
-    acc_offset_y = get_acc_offset(Y_AXIS);
-    acc_offset_z = get_acc_offset(Z_AXIS);
-}
-
 float imu_compute_units(int8_t axis){
-	/*
-    *   TASK 10 : TO COMPLETE
-    */
 	float acceleration = 0;
 
 	if (axis == Y_AXIS){
@@ -51,7 +43,7 @@ float imu_compute_units(int8_t axis){
 }
 
 
-float compute_direction(float acc_y, float acc_z){
+void compute_direction(float acc_y, float acc_z){
 
 	float cos_alpha = 0, sin_alpha = 0, grav_y = 0;
 
@@ -59,10 +51,8 @@ float compute_direction(float acc_y, float acc_z){
 	sin_alpha = sqrt(1-cos_alpha*cos_alpha);
 	grav_y = STANDARD_GRAVITY*sin_alpha; // >= 0
 
-	if(acc_y < -GRAV_Y_MARGE){	// This condition is sufficient as the epuck motor acceleration is lower than gravity acc
+	if(acc_y < 0){	// This condition is sufficient as the epuck motor acceleration is lower than gravity acc
 		grav_y = -grav_y;
-	}else if(fabs(acc_y) < GRAV_Y_MARGE){
-		grav_y = 0;
 	}
 
 	/*
@@ -78,7 +68,6 @@ float compute_direction(float acc_y, float acc_z){
 	}
 	*/
 
-	return grav_y;
 }
 
 
@@ -91,7 +80,20 @@ float compute_direction(float acc_y, float acc_z){
 
 
 /****************************PUBLIC FUNCTIONS*************************************/
+
+void compute_accyz_offset(void){
+    acc_offset_y = get_acc_offset(Y_AXIS);
+    acc_offset_z = get_acc_offset(Z_AXIS);
+}
+
+
+float compute_gravity_y(void){
+	compute_direction(imu_compute_units(Y_AXIS), imu_compute_units(Z_AXIS));
+	return grav_y;
+}
+
  /*
+
 void imu_compute_offset(messagebus_topic_t * imu_topic, uint16_t nb_samples){
 
 

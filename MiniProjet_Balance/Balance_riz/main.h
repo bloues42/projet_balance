@@ -10,6 +10,13 @@ extern "C" {
 #include "parameter/parameter.h"
 
 
+#define KP						800.0f
+#define KI						3.5f
+#define MAX_SUM_ERROR			(MOTOR_SPEED_LIMIT/KI)
+#define GRAV_Y_MARGE			0.1
+#define ROTATION_THRESHOLD		10
+#define ROTATION_COEFF			2
+
 /** Robot wide IPC bus. */
 extern messagebus_t bus;
 

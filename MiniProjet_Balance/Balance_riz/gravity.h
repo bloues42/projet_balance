@@ -25,23 +25,8 @@ typedef struct {
     uint8_t status;
 } imu_msg_t;
 
-void get_accyz_offset(void);
-
-float imu_compute_units(int8_t axis);
-
-float compute_direction(float acc_y, float acc_z);
-
-//void imu_compute_offset(messagebus_topic_t * imu_topic, uint16_t nb_samples);
-
- /**
- * @brief   Returns the last accelerometer value measured
- *          for the axis given
- *
- * @param axis      0-2, respectively x,y or z
- *
- * @return          Last accelerometer value measured
- */
-
+void compute_accyz_offset(void);
+float compute_gravity_y(void);
 
 
 #ifdef __cplusplus

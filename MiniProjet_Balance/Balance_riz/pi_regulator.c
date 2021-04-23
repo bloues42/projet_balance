@@ -1,41 +1,39 @@
+#include "pi_regulator.h"
+
 #include "ch.h"
 #include "hal.h"
 #include <math.h>
 #include <usbcfg.h>
 #include <chprintf.h>
 
-
+#include <gravity.h>
 #include <main.h>
 #include <motors.h>
-#include <pi_regulator.h>
+
 
 //simple PI regulator implementation
-int16_t pi_regulator(float distance, float goal){
+int16_t pi_regulator(float grav_y){
 
-	float error = 0;
 	float speed = 0;
-
-	static float sum_error = 0;
-
-	error = distance - goal;
+	static float sum_grav_y = 0;
 
 	//disables the PI regulator if the error is to small
-	//this avoids to always move as we cannot exactly be where we want and 
-	//the camera is a bit noisy
-	if(fabs(error) < ERROR_THRESHOLD){
+	//this avoids to always move as we cannot exactly be where we want
+	//and it accounts for inaccuracy in the acceleration measurement
+	if(fabs(grav_y) < GRAV_Y_MARGE){
 		return 0;
 	}
 
-	sum_error += error;
+	sum_grav_y += grav_y;
 
 	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
-	if(sum_error > MAX_SUM_ERROR){
-		sum_error = MAX_SUM_ERROR;
-	}else if(sum_error < -MAX_SUM_ERROR){
-		sum_error = -MAX_SUM_ERROR;
+	if(sum_grav_y > MAX_SUM_ERROR){
+		sum_grav_y = MAX_SUM_ERROR;
+	}else if(sum_grav_y < -MAX_SUM_ERROR){
+		sum_grav_y = -MAX_SUM_ERROR;
 	}
 
-	speed = KP * error + KI * sum_error;
+	speed = KP * grav_y + KI * sum_grav_y;
 
     return (int16_t)speed;
 }
@@ -55,8 +53,11 @@ static THD_FUNCTION(PiRegulator, arg) {
         time = chVTGetSystemTime();
         
         //computes the speed to give to the motors
-        //distance_cm is modified by the image processing thread
-        speed = pi_regulator(get_distance_cm(), GOAL_DISTANCE);
+        //the value of the gravity is obtained from imu thread
+        speed = pi_regulator(compute_gravity_y());
+
+
+/* A FAIRE
         //computes a correction factor to let the robot rotate to be in front of the line
         speed_correction = (get_line_position() - (IMAGE_BUFFER_SIZE/2));
 
@@ -64,6 +65,8 @@ static THD_FUNCTION(PiRegulator, arg) {
         if(abs(speed_correction) < ROTATION_THRESHOLD){
         	speed_correction = 0;
         }
+*/
+
 
         //applies the speed from the PI regulator and the correction for the rotation
 		right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);

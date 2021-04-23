@@ -16,7 +16,7 @@
 #include <leds.h>
 //#include <msgbus/messagebus.h>
 
-//#include <pi_regulator.h>
+//#include <pid_regulator.h>
 
 //#include <communications.h> FROM TP5
 //#include <arm_math.h>		  FROM TP5
@@ -92,7 +92,7 @@ int main(void)
 */
     //calibrate acceleration sensor
     calibrate_acc();
-    get_accyz_offset();
+    compute_accyz_offset();
     set_body_led(1);
 
 	//calibrate IR proximity sensor
@@ -124,7 +124,7 @@ int main(void)
 		acc_y = imu_compute_units(Y_AXIS); //get_acceleration(Y_AXIS); //
 		acc_z = imu_compute_units(Z_AXIS); //get_acceleration(Z_AXIS); //
 
-		grav_y = compute_direction(acc_y, acc_z);
+		//grav_y = get_gravity_y();
 
 		if (i==5){
 			chprintf((BaseSequentialStream *)&SD3, "%Ay=%-7f Az=%-7f gravy=%-7f \r\n",
