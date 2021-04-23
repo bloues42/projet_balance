@@ -79,8 +79,7 @@ int main(void)
     motors_init();
     //starts IR proximity sensor
     proximity_start();
-	//stars the threads for the pi regulator
-	//pi_regulator_start();
+
     //starts imu
     imu_start();
 
@@ -98,12 +97,15 @@ int main(void)
 	//calibrate IR proximity sensor
 	calibrate_ir();
 
+	//stars the threads for the pi regulator
+	pi_regulator_start();
+
 	uint32_t i = 0;
 	uint32_t dist_sensor0 = 0;
 
-    uint8_t speed = 200;
-	right_motor_set_speed(speed);
-	left_motor_set_speed(speed);
+	//uint8_t speed = 200;
+    //right_motor_set_speed(speed);
+    //left_motor_set_speed(speed);
 
     float acc_y = 0, acc_z = 0;
     float grav_y = 0;
@@ -124,7 +126,7 @@ int main(void)
 		acc_y = imu_compute_units(Y_AXIS); //get_acceleration(Y_AXIS); //
 		acc_z = imu_compute_units(Z_AXIS); //get_acceleration(Z_AXIS); //
 
-		//grav_y = get_gravity_y();
+		grav_y = compute_gravity_y();
 
 		if (i==5){
 			chprintf((BaseSequentialStream *)&SD3, "%Ay=%-7f Az=%-7f gravy=%-7f \r\n",

@@ -45,7 +45,7 @@ float imu_compute_units(int8_t axis){
 
 void compute_direction(float acc_y, float acc_z){
 
-	float cos_alpha = 0, sin_alpha = 0, grav_y = 0;
+	float cos_alpha = 0, sin_alpha = 0;
 
 	cos_alpha = fabs(acc_z)/STANDARD_GRAVITY;
 	sin_alpha = sqrt(1-cos_alpha*cos_alpha);

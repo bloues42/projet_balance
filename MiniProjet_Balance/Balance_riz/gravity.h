@@ -27,7 +27,7 @@ typedef struct {
 
 void compute_accyz_offset(void);
 float compute_gravity_y(void);
-
+float imu_compute_units(int8_t axis);
 
 #ifdef __cplusplus
 }

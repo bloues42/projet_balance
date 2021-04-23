@@ -15,7 +15,7 @@
 int16_t pi_regulator(float grav_y){
 
 	float speed = 0;
-	static float sum_grav_y = 0;
+	static float sum_grav_y = 10;
 
 	//disables the PI regulator if the error is to small
 	//this avoids to always move as we cannot exactly be where we want
@@ -23,8 +23,16 @@ int16_t pi_regulator(float grav_y){
 	if(fabs(grav_y) < GRAV_Y_MARGE){
 		return 0;
 	}
+	static int i = 0;
+
 
 	sum_grav_y += grav_y;
+
+	if (i==500){
+		chprintf((BaseSequentialStream *)&SD3, "%grav=%-7f %vitesse=%-7f \r\n",sum_grav_y, speed);
+		i=0;
+	}
+	i++;
 
 	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
 	if(sum_grav_y > MAX_SUM_ERROR){
@@ -33,7 +41,9 @@ int16_t pi_regulator(float grav_y){
 		sum_grav_y = -MAX_SUM_ERROR;
 	}
 
-	speed = KP * grav_y + KI * sum_grav_y;
+	speed = KP * grav_y; //+ KI * sum_grav_y;
+
+
 
     return (int16_t)speed;
 }
@@ -48,7 +58,6 @@ static THD_FUNCTION(PiRegulator, arg) {
 
     int16_t speed = 0;
     int16_t speed_correction = 0;
-
     while(1){
         time = chVTGetSystemTime();
         

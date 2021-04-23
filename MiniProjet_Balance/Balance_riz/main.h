@@ -8,7 +8,7 @@ extern "C" {
 #include "camera/dcmi_camera.h"
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
-
+#include <motors.h>
 
 #define KP						800.0f
 #define KI						3.5f
