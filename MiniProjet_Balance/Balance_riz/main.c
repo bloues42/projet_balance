@@ -101,7 +101,6 @@ int main(void)
 	pi_regulator_start();
 
 	uint32_t i = 0;
-	uint32_t dist_sensor0 = 0;
 
 	//uint8_t speed = 200;
     //right_motor_set_speed(speed);
@@ -110,21 +109,26 @@ int main(void)
     float acc_y = 0, acc_z = 0;
     float grav_y = 0;
 
+    int32_t ir_left = 0, ir_right = 0, difference = 0;
+
     while (1) {
 
-    //	if (i==5000){
-    /*
-    		dist_sensor0 = get_calibrated_prox(0);
-    		chprintf((BaseSequentialStream *)&SD3, "distance=%d\n", dist_sensor0);
+    	//if (i==5000){
+
+    		ir_left = get_calibrated_prox(IR_RIGHT);
+    		ir_right = get_calibrated_prox(IR_LEFT);
+    		difference = ir_right - ir_left;
+    		chprintf((BaseSequentialStream *)&SD3, "left=%d right=%d difference=%d \r\n", ir_left, ir_right, difference);
     	//	i=0;
     	//}
     	//i++;
         chThdSleepMilliseconds(1000);
-    */
 
 
+/*
 		acc_y = imu_compute_units(Y_AXIS); //get_acceleration(Y_AXIS); //
 		acc_z = imu_compute_units(Z_AXIS); //get_acceleration(Z_AXIS); //
+
 
 		grav_y = compute_gravity_y();
 
@@ -135,7 +139,7 @@ int main(void)
 			i=0;
 		}
 		i++;
-
+*/
     	chThdSleepMilliseconds(300);
     }
 }

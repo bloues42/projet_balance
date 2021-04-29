@@ -9,13 +9,13 @@
 #include <gravity.h>
 #include <main.h>
 #include <motors.h>
-
+#include <sensors/proximity.h>
 
 //simple PI regulator implementation
 int16_t pi_regulator(float grav_y){
 
 	float speed = 0;
-	static float sum_grav_y = 10;
+	static float sum_grav_y = 0;
 
 	//disables the PI regulator if the error is to small
 	//this avoids to always move as we cannot exactly be where we want
@@ -25,11 +25,10 @@ int16_t pi_regulator(float grav_y){
 	}
 	static int i = 0;
 
-
 	sum_grav_y += grav_y;
 
-	if (i==500){
-		chprintf((BaseSequentialStream *)&SD3, "%grav=%-7f %vitesse=%-7f \r\n",sum_grav_y, speed);
+	if (i==5){
+		chprintf((BaseSequentialStream *)&SD3, "grav_sum=%f grav=%f vitesse=%f \r\n",sum_grav_y, grav_y, speed);
 		i=0;
 	}
 	i++;
@@ -41,8 +40,7 @@ int16_t pi_regulator(float grav_y){
 		sum_grav_y = -MAX_SUM_ERROR;
 	}
 
-	speed = KP * grav_y; //+ KI * sum_grav_y;
-
+	speed = KP * grav_y + KI * sum_grav_y;
 
 
     return (int16_t)speed;
@@ -55,31 +53,38 @@ static THD_FUNCTION(PiRegulator, arg) {
     (void)arg;
 
     systime_t time;
-
-    int16_t speed = 0;
-    int16_t speed_correction = 0;
+    int16_t speed=50;
+    int16_t speed_correction = 0;        static int j = 0;
+    int32_t pi_ir_left = 0, pi_ir_right = 0;
     while(1){
         time = chVTGetSystemTime();
         
         //computes the speed to give to the motors
         //the value of the gravity is obtained from imu thread
-        speed = pi_regulator(compute_gravity_y());
 
+        //speed = pi_regulator(compute_gravity_y());
 
-/* A FAIRE
-        //computes a correction factor to let the robot rotate to be in front of the line
-        speed_correction = (get_line_position() - (IMAGE_BUFFER_SIZE/2));
+        //computes a correction factor to let the robot rotate in the middle of the platform
+        pi_ir_left = get_calibrated_prox(IR_LEFT);
+        pi_ir_right = get_calibrated_prox(IR_RIGHT);
+        speed_correction = pi_ir_left - pi_ir_right;
 
-        //if the line is nearly in front of the camera, don't rotate
+        //if the difference of distance is too small, don't rotate
         if(abs(speed_correction) < ROTATION_THRESHOLD){
         	speed_correction = 0;
         }
-*/
 
+
+        if (j==5){
+			chprintf((BaseSequentialStream *)&SD3, "corr=%d LEFT=%d RIGHT=%d \r\n",speed_correction, pi_ir_left, pi_ir_right);
+			j=0;
+		}
+		j++;
 
         //applies the speed from the PI regulator and the correction for the rotation
-		right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
-		left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
+			right_motor_set_speed(speed- ROTATION_COEFF * speed_correction/50);
+			left_motor_set_speed(speed + ROTATION_COEFF * speed_correction/50);
+
 
         //100Hz
         chThdSleepUntilWindowed(time, time + MS2ST(10));

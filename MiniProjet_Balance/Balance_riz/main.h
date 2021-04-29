@@ -5,17 +5,21 @@
 extern "C" {
 #endif
 
-#include "camera/dcmi_camera.h"
+//#include "camera/dcmi_camera.h"
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
 #include <motors.h>
 
-#define KP						800.0f
-#define KI						3.5f
+#define KP						1200.0f//800.0f
+#define KI						12.0f//3.5f
 #define MAX_SUM_ERROR			(MOTOR_SPEED_LIMIT/KI)
-#define GRAV_Y_MARGE			0.1
-#define ROTATION_THRESHOLD		10
+#define GRAV_Y_MARGE			1.3
+#define ROTATION_THRESHOLD		80
 #define ROTATION_COEFF			2
+
+enum	IR_sensor_pos{IR_FRONT_RIGHT=0, IR_FRONT_RIGHT45, IR_RIGHT, IR_BACK_RIGHT, IR_BACK_LEFT, IR_LEFT, IR_FRONT_LEFT45, IR_FRONT_LEFT};
+
+
 
 /** Robot wide IPC bus. */
 extern messagebus_t bus;

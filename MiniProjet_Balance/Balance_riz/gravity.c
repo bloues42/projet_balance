@@ -39,7 +39,7 @@ float imu_compute_units(int8_t axis){
 		acceleration = ((get_acc(Z_AXIS)-acc_offset_z)*STANDARD_GRAVITY * ACC_RAW2G) - STANDARD_GRAVITY;
 	}
 
-	return acceleration;
+	return acceleration;	//CHANGE BACK ZZZ BY ACCELERATION
 }
 
 
@@ -48,26 +48,12 @@ void compute_direction(float acc_y, float acc_z){
 	float cos_alpha = 0, sin_alpha = 0;
 
 	cos_alpha = fabs(acc_z)/STANDARD_GRAVITY;
-	sin_alpha = sqrt(1-cos_alpha*cos_alpha);
-	grav_y = STANDARD_GRAVITY*sin_alpha; // >= 0
+	sin_alpha = sqrtf(fabs(1-cos_alpha*cos_alpha));// fabs in case acc_z > STANDARD_GRAVITY for whatever reason...
+	grav_y =  STANDARD_GRAVITY*sin_alpha; // >= 0
 
 	if(acc_y < 0){	// This condition is sufficient as the epuck motor acceleration is lower than gravity acc
 		grav_y = -grav_y;
 	}
-
-	/*
-	if(fabs(acc_y) < (grav_y - GRAV_Y_MARGE)){
-		if(acc_y > 0)
-			grav_y =  -grav_y;
-
-	}else if(fabs(acc_y) > (grav_y + GRAV_Y_MARGE)){
-		if(acc_y < 0)
-			grav_y = - grav_y;
-	}else{
-		grav_y = 0;
-	}
-	*/
-
 }
 
 

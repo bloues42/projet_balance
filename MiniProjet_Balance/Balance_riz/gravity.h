@@ -7,8 +7,8 @@ extern "C" {
 
 #include <hal.h>
 #include <sensors/mpu9250.h>
-#include <msgbus/messagebus.h>
-#include <sensors/imu.h>
+//#include <msgbus/messagebus.h>
+//#include <sensors/imu.h>
 
 /** Message containing one measurement from the IMU. */
 typedef struct {
