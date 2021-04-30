@@ -23,6 +23,7 @@ static int16_t acc_offset_y = 0, acc_offset_z = 0;
 static float grav_y;
 static float grav_z = -STANDARD_GRAVITY;
 static float error_grav_z = 0;
+static uint8_t still_moving = 1;
 
 /***************************INTERNAL FUNCTIONS************************************/
 
@@ -75,12 +76,39 @@ void compute_grav_direction(float acc_y, float acc_z){
 }
 
 void update_grav(void){
+	grav_y = imu_compute_units(Y_AXIS);
 	grav_z = WEIGHT_LAST*grav_z + WEIGHT_CURR*imu_compute_units(Z_AXIS);
-	error_grav_z = grav_z + STANDARD_GRAVITY;	//we add STANDARD_GRAVITY instead of substracting because grav_z is negative
+	//error_grav_z = grav_z + STANDARD_GRAVITY;	//we add STANDARD_GRAVITY instead of substracting because grav_z is negative
 
-	if(fabs(error_grav_z) < MARGIN_GRAV_Z){
+/*
+	if((fabs(error_grav_z) < MARGIN_GRAV_Z) || (grav_z < -STANDARD_GRAVITY)){
 			error_grav_z = 0;
 	}
+*/
+	//we check two conditions :
+	// - if the acceleration measured in z is within a certain margin of the standard gravity
+	// - if the acceleration measured in z is larger than standard gravity (meaning there's been an external acceleration that disturbed the measurement)
+	// in either of these cases, we keep the previous value of the error
+	// else, we update the value
+	// The purpose of these conditions is to ensure that equilibrium is reached before stopping.
+	// Thus we only change the error to 0 if the previous error was already 0.
+
+	if((fabs(grav_z + STANDARD_GRAVITY) < MARGIN_GRAV_Z)){
+		if(still_moving == 0){
+			error_grav_z = 0;
+		}
+		else{
+			still_moving = 0;
+		}
+	}
+	else if(grav_z >= -STANDARD_GRAVITY){
+		error_grav_z = grav_z + STANDARD_GRAVITY;
+		if(grav_y<0){
+			error_grav_z = - error_grav_z;
+		}
+	}
+
+	chprintf((BaseSequentialStream *)&SD3, "accy=%f   gravz=%f  error=%f\r\n", grav_y, grav_z, error_grav_z);
 }
 
 /*************************END INTERNAL FUNCTIONS**********************************/

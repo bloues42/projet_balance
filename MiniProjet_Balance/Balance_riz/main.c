@@ -103,8 +103,8 @@ int main(void)
 
 	uint32_t i = 0, j=0;
 
-	/*
-	int16_t speed = 500;
+
+/*	int16_t speed = 500;
     right_motor_set_speed(speed);
     left_motor_set_speed(speed);
 */
@@ -140,7 +140,7 @@ int main(void)
 			j=0;
 		}
 		j++;
-/*
+
         if(i==10){
         	speed = -speed;
 			right_motor_set_speed(speed);

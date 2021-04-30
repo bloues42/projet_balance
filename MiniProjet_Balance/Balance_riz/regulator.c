@@ -12,25 +12,17 @@
 #include <sensors/proximity.h>
 
 //simple regulator implementation
+//error is zero under a certain threshold
 int16_t regulator(float error){
 
 	float speed = 0;
 	//static float sum_grav_y = 0;
 
-	//disables the regulator if the error is to small
-	//this avoids to always move as we cannot exactly be where we want
-	//and it accounts for inaccuracy in the acceleration measurement
-	if(fabs(error) < MARGIN_GRAV_Z){
-		return 0;
-	}
-
 	static int i = 0;
 
-	//sum_grav_y += grav_y;
+/* pour le régulateur I
+	sum_grav_y += grav_y;
 
-
-
-/*
 	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
 	if(sum_grav_y > MAX_SUM_ERROR){
 		sum_grav_y = MAX_SUM_ERROR;
@@ -38,13 +30,16 @@ int16_t regulator(float error){
 		sum_grav_y = -MAX_SUM_ERROR;
 	}
 */
-	speed = KP * error; //+ KI * sum_grav_y;
+	int8_t signe = ((error > 0) ? 1 : ((error < 0) ? -1 : 0));
+
+	speed = KP * error + signe*SPEED_MIN; //+ KI * sum_grav_y;
+/*
 	if (i==5){
 		chprintf((BaseSequentialStream *)&SD3, "erreur=%f vitesse=%f \r\n", error, speed);
 		i=0;
 	}
 	i++;
-
+*/
     return (int16_t)speed;
 }
 
@@ -70,7 +65,7 @@ static THD_FUNCTION(Regulator, arg) {
         //computes a correction factor to let the robot rotate in the middle of the platform
         ir_left = get_calibrated_prox(IR_LEFT);
         ir_right = get_calibrated_prox(IR_RIGHT);
-        //speed_correction = ir_left - ir_right;
+        speed_correction = ir_left - ir_right;
 
         //if the difference of distance is too small, don't rotate
         if(abs(speed_correction) < ROTATION_THRESHOLD){
@@ -89,8 +84,8 @@ static THD_FUNCTION(Regulator, arg) {
 			left_motor_set_speed(speed + ROTATION_COEFF * speed_correction/50);
 
 
-        //100Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
+        //10Hz
+        chThdSleepUntilWindowed(time, time + MS2ST(100));
     }
 }
 

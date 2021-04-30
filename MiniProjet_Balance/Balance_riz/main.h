@@ -11,8 +11,9 @@ extern "C" {
 
 #define KP						800.0f
 #define KI						12.0f//3.5f
+#define SPEED_MIN				200
 #define MAX_SUM_ERROR			(MOTOR_SPEED_LIMIT/KI)
-#define GRAV_Y_MARGE			0.1f //1.3
+//#define GRAV_Y_MARGE			0.1f //1.3
 #define ROTATION_THRESHOLD		80
 #define ROTATION_COEFF			2
 

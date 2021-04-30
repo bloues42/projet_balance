@@ -10,7 +10,7 @@ extern "C" {
 //#include <msgbus/messagebus.h>
 //#include <sensors/imu.h>
 
-#define MARGIN_GRAV_Z  0.3f
+#define MARGIN_GRAV_Z  0.08f
 
 /** Message containing one measurement from the IMU. */
 typedef struct {
