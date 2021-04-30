@@ -16,7 +16,7 @@
 #include <leds.h>
 //#include <msgbus/messagebus.h>
 
-//#include <pid_regulator.h>
+#include <regulator.h>
 
 //#include <communications.h> FROM TP5
 //#include <arm_math.h>		  FROM TP5
@@ -92,29 +92,31 @@ int main(void)
     //calibrate acceleration sensor
     calibrate_acc();
     compute_accyz_offset();
+
     set_body_led(1);
 
 	//calibrate IR proximity sensor
 	calibrate_ir();
 
 	//stars the threads for the pi regulator
-	pi_regulator_start();
+	regulator_start();
 
-	uint32_t i = 0;
+	uint32_t i = 0, j=0;
 
-	//uint8_t speed = 200;
-    //right_motor_set_speed(speed);
-    //left_motor_set_speed(speed);
-
+	/*
+	int16_t speed = 500;
+    right_motor_set_speed(speed);
+    left_motor_set_speed(speed);
+*/
     float acc_y = 0, acc_z = 0;
-    float grav_y = 0;
+    float error = 0;
 
     int32_t ir_left = 0, ir_right = 0, difference = 0;
 
     while (1) {
 
     	//if (i==5000){
-
+/*
     		ir_left = get_calibrated_prox(IR_RIGHT);
     		ir_right = get_calibrated_prox(IR_LEFT);
     		difference = ir_right - ir_left;
@@ -122,23 +124,30 @@ int main(void)
     	//	i=0;
     	//}
     	//i++;
-        chThdSleepMilliseconds(1000);
+        //chThdSleepMilliseconds(1000);
 
 
-/*
 		acc_y = imu_compute_units(Y_AXIS); //get_acceleration(Y_AXIS); //
 		acc_z = imu_compute_units(Z_AXIS); //get_acceleration(Z_AXIS); //
 
 
-		grav_y = compute_gravity_y();
+		error = compute_error();
 
-		if (i==5){
-			chprintf((BaseSequentialStream *)&SD3, "%Ay=%-7f Az=%-7f gravy=%-7f \r\n",
-					acc_y, acc_z, grav_y);
+		if (j==3){
+			chprintf((BaseSequentialStream *)&SD3, "%Ay=%-7f Az=%-7f error=%-7f \r\n",
+					acc_y, acc_z, error);
 
-			i=0;
+			j=0;
 		}
-		i++;
+		j++;
+/*
+        if(i==10){
+        	speed = -speed;
+			right_motor_set_speed(speed);
+			left_motor_set_speed(speed);
+			i=0;
+        }
+        i++;
 */
     	chThdSleepMilliseconds(300);
     }

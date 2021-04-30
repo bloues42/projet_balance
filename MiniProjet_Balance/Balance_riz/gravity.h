@@ -10,6 +10,8 @@ extern "C" {
 //#include <msgbus/messagebus.h>
 //#include <sensors/imu.h>
 
+#define MARGIN_GRAV_Z  0.3f
+
 /** Message containing one measurement from the IMU. */
 typedef struct {
     float acceleration[NB_AXIS]; // m/s^2
@@ -28,6 +30,7 @@ typedef struct {
 void compute_accyz_offset(void);
 float compute_gravity_y(void);
 float imu_compute_units(int8_t axis);
+float compute_error(void);
 
 #ifdef __cplusplus
 }

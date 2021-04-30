@@ -16,10 +16,13 @@
 #define ACC_RAW2G		(RES_2G / MAX_INT16)
 #define GYRO_RAW2DPS	(RES_250DPS / MAX_INT16)
 
-//#define GRAV_Y_MARGE 0.1 	// TO CHANGE -> already in pi regulator
+#define WEIGHT_CURR		0.7
+#define WEIGHT_LAST		0.3
 
 static int16_t acc_offset_y = 0, acc_offset_z = 0;
 static float grav_y;
+static float grav_z = -STANDARD_GRAVITY;
+static float error_grav_z = 0;
 
 /***************************INTERNAL FUNCTIONS************************************/
 
@@ -28,7 +31,6 @@ static float grav_y;
  * 			RAW accelerometer to m/s^2 acceleration
  * 			RAW gyroscope to rad/s speed
  */
-
 float imu_compute_units(int8_t axis){
 	float acceleration = 0;
 
@@ -43,24 +45,43 @@ float imu_compute_units(int8_t axis){
 }
 
 
-void compute_direction(float acc_y, float acc_z){
+/**
+* @brief   Computes the value of the projection of gravity along the y-axis using the acceleration measured
+* along the z-axis of the robot.
+*/
+void compute_grav_direction(float acc_y, float acc_z){
 
 	float cos_alpha = 0, sin_alpha = 0;
+	static uint16_t i=0;
 
-	cos_alpha = fabs(acc_z)/STANDARD_GRAVITY;
-	sin_alpha = sqrtf(fabs(1-cos_alpha*cos_alpha));// fabs in case acc_z > STANDARD_GRAVITY for whatever reason...
-	grav_y =  STANDARD_GRAVITY*sin_alpha; // >= 0
+	if(fabs(acc_z+STANDARD_GRAVITY) < MARGIN_GRAV_Z){
+		grav_y = 0;
+	}else{
+		cos_alpha = fabs(acc_z)/STANDARD_GRAVITY;
+		sin_alpha = sqrtf(fabs(1-cos_alpha*cos_alpha));// fabs in case acc_z > STANDARD_GRAVITY for whatever reason...
+		grav_y =  STANDARD_GRAVITY*sin_alpha; // >= 0
 
-	if(acc_y < 0){	// This condition is sufficient as the epuck motor acceleration is lower than gravity acc
-		grav_y = -grav_y;
+		if(acc_y < 0){	// This condition is sufficient as the epuck motor acceleration is lower than gravity acc
+			grav_y = -grav_y;
+		}
 	}
+
+	if (i==5){
+			chprintf((BaseSequentialStream *)&SD3, "accz=%f    gravy=%f \r\n", acc_z, grav_y);
+			i=0;
+		}
+		i++;
+
 }
 
+void update_grav(void){
+	grav_z = WEIGHT_LAST*grav_z + WEIGHT_CURR*imu_compute_units(Z_AXIS);
+	error_grav_z = grav_z + STANDARD_GRAVITY;	//we add STANDARD_GRAVITY instead of substracting because grav_z is negative
 
- /**
- * @brief   Thread which updates the measurements and publishes them
- */
-
+	if(fabs(error_grav_z) < MARGIN_GRAV_Z){
+			error_grav_z = 0;
+	}
+}
 
 /*************************END INTERNAL FUNCTIONS**********************************/
 
@@ -72,56 +93,17 @@ void compute_accyz_offset(void){
     acc_offset_z = get_acc_offset(Z_AXIS);
 }
 
-
+/*
 float compute_gravity_y(void){
-	compute_direction(imu_compute_units(Y_AXIS), imu_compute_units(Z_AXIS));
+	compute_grav_direction(imu_compute_units(Y_AXIS), imu_compute_units(Z_AXIS));
 	return grav_y;
 }
-
- /*
-
-void imu_compute_offset(messagebus_topic_t * imu_topic, uint16_t nb_samples){
-
-
-    *   TASK 9 : TO COMPLETE
-
-
-	//imu_msg_t curr_values;
-	int32_t tot_gyro[NB_AXIS]={0}, tot_acc[NB_AXIS]={0};
-
-	for(uint16_t s=0; s<nb_samples; s++){
-		messagebus_topic_wait(imu_topic, &imu_values, sizeof(imu_values));
-
-		tot_gyro[X_AXIS] += imu_values.gyro_raw[X_AXIS];
-		tot_gyro[Y_AXIS] += imu_values.gyro_raw[Y_AXIS];
-		tot_gyro[Z_AXIS] += imu_values.gyro_raw[Z_AXIS];
-
-		tot_acc[X_AXIS] += imu_values.acc_raw[X_AXIS];
-		tot_acc[Y_AXIS] += imu_values.acc_raw[Y_AXIS];
-		tot_acc[Z_AXIS] += imu_values.acc_raw[Z_AXIS];
-	}
-
-
-	tot_gyro[X_AXIS] /= nb_samples;
-	imu_values.gyro_offset[X_AXIS] = tot_gyro[X_AXIS];
-
-	imu_values.gyro_offset[Y_AXIS] = tot_gyro[Y_AXIS]/nb_samples;
-	imu_values.gyro_offset[Z_AXIS] = tot_gyro[Z_AXIS]/nb_samples;
-
-
-	imu_values.acc_offset[X_AXIS] = tot_acc[X_AXIS]/nb_samples;
-//	imu_values.acc_offset[Y_AXIS] = tot_acc[Y_AXIS]/nb_samples;
-	//pour z, il faut ajouter la gravité
-	imu_values.acc_offset[Z_AXIS] = (tot_acc[Z_AXIS]/nb_samples) + (MAX_INT16 / RES_2G);
-
-	palClearPad(GPIOB, GPIOB_LED_BODY);
-
-	//chprintf((BaseSequentialStream *)&SD3, "%Ax=%-7d Ay=%-7d Az=%-7d Gx=%-7d Gy=%-7d Gz=%-7d\r\n",
-	 //               imu_values.acc_offset[X_AXIS], imu_values.acc_offset[Y_AXIS], imu_values.acc_offset[Z_AXIS],
-	 //               imu_values.gyro_offset[X_AXIS], imu_values.gyro_offset[Y_AXIS], imu_values.gyro_offset[Z_AXIS]);
-
-}
 */
+
+float compute_error(void){
+	update_grav();
+	return error_grav_z;
+}
 
 /**************************END PUBLIC FUNCTIONS***********************************/
 
