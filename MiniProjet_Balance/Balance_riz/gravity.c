@@ -106,6 +106,7 @@ void update_grav(void){
 		if(grav_y<0){
 			error_grav_z = - error_grav_z;
 		}
+		still_moving = 1;
 	}
 
 	chprintf((BaseSequentialStream *)&SD3, "accy=%f   gravz=%f  error=%f\r\n", grav_y, grav_z, error_grav_z);
