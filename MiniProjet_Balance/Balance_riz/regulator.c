@@ -53,22 +53,36 @@ static THD_FUNCTION(Regulator, arg) {
     int16_t speed = 0;
     int16_t speed_correction = 0;
     static int j = 0;
-    int32_t ir_left = 0, ir_right = 0;
+    int32_t ir_left = 0, ir_right = 0, ir_back;
+
     while(1){
         time = chVTGetSystemTime();
         
         //computes the speed to give to the motors
         //the value of the gravity is obtained from imu thread
+        speed = regulator(compute_error());
 
-       speed = regulator(compute_error());
+        if(speed > 0){
+        	//computes a correction factor to let the robot rotate in the middle of the platform
+			ir_left = get_calibrated_prox(IR_LEFT);
+			ir_right = get_calibrated_prox(IR_RIGHT);
+			speed_correction = ir_left - ir_right;
 
-        //computes a correction factor to let the robot rotate in the middle of the platform
-        ir_left = get_calibrated_prox(IR_LEFT);
-        ir_right = get_calibrated_prox(IR_RIGHT);
-        speed_correction = ir_left - ir_right;
+			//if the difference of distance is too small, don't rotate
+			if(abs(speed_correction) < ROTATION_THRESHOLD){
+				speed_correction = 0;
+			}
+        }else if(speed < 0){
+        	//computes a correction factor to let the robot rotate in the middle of the platform
+			ir_left = get_calibrated_prox(IR_LEFT);
+			ir_right = get_calibrated_prox(IR_RIGHT);
+			speed_correction = ir_right - ir_left;
 
-        //if the difference of distance is too small, don't rotate
-        if(abs(speed_correction) < ROTATION_THRESHOLD){
+			//if the difference of distance is too small, don't rotate
+			if(abs(speed_correction) < ROTATION_THRESHOLD){
+				speed_correction = 0;
+			}
+        }else{
         	speed_correction = 0;
         }
 
@@ -79,10 +93,20 @@ static THD_FUNCTION(Regulator, arg) {
 		}
 		j++;
 */
-        //applies the speed from the regulator and the correction for the rotation
-			right_motor_set_speed(speed- ROTATION_COEFF * speed_correction/50);
-			left_motor_set_speed(speed + ROTATION_COEFF * speed_correction/50);
 
+		//checks if the robot is too close to the back wall
+		//in which case, it only allows the robot to move forward
+		ir_back = (get_calibrated_prox(IR_BACK_LEFT) + get_calibrated_prox(IR_BACK_RIGHT))/2;
+		if(ir_back > BACK_WALL_STOP){
+			if(speed < 0){
+				speed = 0;
+				speed_correction = 0;
+			}
+		}
+
+        //applies the speed from the regulator and the correction for the rotation
+		right_motor_set_speed(speed- ROTATION_COEFF * speed_correction);
+		left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
 
         //10Hz
         chThdSleepUntilWindowed(time, time + MS2ST(100));

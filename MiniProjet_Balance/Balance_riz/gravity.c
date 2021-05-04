@@ -76,7 +76,9 @@ void compute_grav_direction(float acc_y, float acc_z){
 }
 
 void update_grav(void){
+
 	grav_y = imu_compute_units(Y_AXIS);
+	//float grav_z_temp = WEIGHT_LAST*grav_z + WEIGHT_CURR*imu_compute_units(Z_AXIS);
 	grav_z = WEIGHT_LAST*grav_z + WEIGHT_CURR*imu_compute_units(Z_AXIS);
 	//error_grav_z = grav_z + STANDARD_GRAVITY;	//we add STANDARD_GRAVITY instead of substracting because grav_z is negative
 
@@ -102,6 +104,7 @@ void update_grav(void){
 		}
 	}
 	else if(grav_z >= -STANDARD_GRAVITY){
+		//grav_z = grav_z_temp;
 		error_grav_z = grav_z + STANDARD_GRAVITY;
 		if(grav_y<0){
 			error_grav_z = - error_grav_z;
@@ -109,7 +112,7 @@ void update_grav(void){
 		still_moving = 1;
 	}
 
-	chprintf((BaseSequentialStream *)&SD3, "accy=%f   gravz=%f  error=%f\r\n", grav_y, grav_z, error_grav_z);
+	chprintf((BaseSequentialStream *)&SD3, "accy=%f  gravz=%f  error=%f\r\n", grav_y, grav_z, error_grav_z);
 }
 
 /*************************END INTERNAL FUNCTIONS**********************************/
