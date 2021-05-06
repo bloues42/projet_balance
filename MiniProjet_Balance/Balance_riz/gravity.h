@@ -10,7 +10,9 @@ extern "C" {
 //#include <msgbus/messagebus.h>
 //#include <sensors/imu.h>
 
-#define MARGIN_GRAV_Z  0.08f
+#define MARGIN_GRAV_Z  	0.08f	//A SUPPRIMER SI ON N'UTILISE PLUS
+#define ERR_MIN			0.06f
+#define DIFF_SIGN_MIN		5
 
 /** Message containing one measurement from the IMU. */
 typedef struct {
@@ -30,7 +32,8 @@ typedef struct {
 void compute_accyz_offset(void);
 float compute_gravity_y(void);
 float imu_compute_units(int8_t axis);
-float compute_error(void);
+bool collect_samples(void);
+float get_mean_error(void);
 
 #ifdef __cplusplus
 }

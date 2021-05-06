@@ -19,10 +19,14 @@
 #define WEIGHT_CURR		0.7
 #define WEIGHT_LAST		0.3
 
+#define NB_SAMPLES		10
+
 static int16_t acc_offset_y = 0, acc_offset_z = 0;
 static float grav_y;
 static float grav_z = -STANDARD_GRAVITY;
 static float error_grav_z = 0;
+static float mean_error;
+static float sum_grav_z = 0;
 static uint8_t still_moving = 1;
 
 /***************************INTERNAL FUNCTIONS************************************/
@@ -101,6 +105,7 @@ void update_grav(void){
 		}
 		else{
 			still_moving = 0;
+			error_grav_z = grav_z + STANDARD_GRAVITY;
 		}
 	}
 	else if(grav_z >= -STANDARD_GRAVITY){
@@ -114,6 +119,7 @@ void update_grav(void){
 
 	chprintf((BaseSequentialStream *)&SD3, "accy=%f  gravz=%f  error=%f\r\n", grav_y, grav_z, error_grav_z);
 }
+
 
 /*************************END INTERNAL FUNCTIONS**********************************/
 
@@ -132,9 +138,56 @@ float compute_gravity_y(void){
 }
 */
 
-float compute_error(void){
-	update_grav();
-	return error_grav_z;
+bool collect_samples(void){
+	static uint8_t samples_collected = 0;
+	static uint8_t nb_neg = 0, nb_pos = 0;
+	grav_y = imu_compute_units(Y_AXIS);
+	float error = imu_compute_units(Z_AXIS) + STANDARD_GRAVITY;
+
+	if(error >= 0){
+		if(grav_y<0){
+			error = - error;
+			nb_neg++;
+		}else{
+			nb_pos++;
+		}
+		samples_collected++;
+		sum_grav_z += error;
+	}
+
+	if(samples_collected == NB_SAMPLES){
+		if(abs(nb_neg-nb_pos)<DIFF_SIGN_MIN){
+			sum_grav_z = 0;
+		}
+		samples_collected = 0;
+		nb_neg = 0;
+		nb_pos = 0;
+		return 1;
+	}
+
+	return 0;
+	//update_grav();
+}
+
+float get_mean_error(void){
+	//grav_y = imu_compute_units(Y_AXIS);
+	float mean_temp = (sum_grav_z/NB_SAMPLES);
+	sum_grav_z = 0;
+
+	if((fabs(mean_temp) < ERR_MIN)){
+		if(still_moving == 0){
+			mean_error = 0;
+		}else{
+			still_moving = 0;
+			mean_error = mean_temp;
+		}
+	}
+	else{
+		mean_error = mean_temp;
+		still_moving = 1;
+	}
+
+	return mean_error;
 }
 
 /**************************END PUBLIC FUNCTIONS***********************************/

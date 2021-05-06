@@ -14,33 +14,47 @@
 //simple regulator implementation
 //error is zero under a certain threshold
 int16_t regulator(float error){
-
 	float speed = 0;
-	//static float sum_grav_y = 0;
-
-	static int i = 0;
-
-/* pour le régulateur I
-	sum_grav_y += grav_y;
-
-	//we set a maximum and a minimum for the sum to avoid an uncontrolled growth
-	if(sum_grav_y > MAX_SUM_ERROR){
-		sum_grav_y = MAX_SUM_ERROR;
-	}else if(sum_grav_y < -MAX_SUM_ERROR){
-		sum_grav_y = -MAX_SUM_ERROR;
-	}
-*/
 	int8_t signe = ((error > 0) ? 1 : ((error < 0) ? -1 : 0));
 
-	speed = KP * error + signe*SPEED_MIN; //+ KI * sum_grav_y;
-/*
-	if (i==5){
-		chprintf((BaseSequentialStream *)&SD3, "erreur=%f vitesse=%f \r\n", error, speed);
-		i=0;
-	}
-	i++;
-*/
+	speed = KP * error + signe * SPEED_MIN;
+
     return (int16_t)speed;
+}
+
+int16_t rotation_regulator(int16_t speed){
+	static uint16_t last_rot_error = 0;
+	float speed_correction = 0;
+	uint16_t rot_error;
+	int32_t ir_left = 0, ir_right = 0;
+
+	ir_left = get_calibrated_prox(IR_LEFT);
+	ir_right = get_calibrated_prox(IR_RIGHT);
+
+	if(speed > 0){
+		//computes a correction factor to let the robot rotate in the middle of the platform
+		if(ir_left>ROTATION_THRESHOLD){
+			rot_error = ir_left;
+		}
+		if(ir_right>ROTATION_THRESHOLD){
+			rot_error = - ir_right;
+		}
+	}else if(speed < 0){
+		//computes a correction factor to let the robot rotate in the middle of the platform
+		if(ir_left>ROTATION_THRESHOLD){
+			rot_error = - ir_left;
+		}
+		if(ir_right>ROTATION_THRESHOLD){
+			rot_error = ir_right;
+		}
+	}else{
+		rot_error = 0;
+	}
+
+	speed_correction = ROTATION_COEFF * (rot_error-last_rot_error);
+
+	last_rot_error = rot_error;
+    return (int16_t)speed_correction;
 }
 
 static THD_WORKING_AREA(waRegulator, 256);
@@ -50,49 +64,31 @@ static THD_FUNCTION(Regulator, arg) {
     (void)arg;
 
     systime_t time;
-    int16_t speed = 0;
+    static int16_t speed = 0;
     int16_t speed_correction = 0;
     static int j = 0;
-    int32_t ir_left = 0, ir_right = 0, ir_back;
+    int32_t ir_back;
+    float mean; //A SUPPRIMER
 
     while(1){
         time = chVTGetSystemTime();
         
-        //computes the speed to give to the motors
-        //the value of the gravity is obtained from imu thread
-        speed = regulator(compute_error());
+        //the function collect samples returns 1 if it has collected all the samples it needs to compute the mean
+        //else, it returns 0
+        if(collect_samples()){
 
-        if(speed > 0){
-        	//computes a correction factor to let the robot rotate in the middle of the platform
-			ir_left = get_calibrated_prox(IR_LEFT);
-			ir_right = get_calibrated_prox(IR_RIGHT);
-			speed_correction = ir_left - ir_right;
-
-			//if the difference of distance is too small, don't rotate
-			if(abs(speed_correction) < ROTATION_THRESHOLD){
-				speed_correction = 0;
-			}
-        }else if(speed < 0){
-        	//computes a correction factor to let the robot rotate in the middle of the platform
-			ir_left = get_calibrated_prox(IR_LEFT);
-			ir_right = get_calibrated_prox(IR_RIGHT);
-			speed_correction = ir_right - ir_left;
-
-			//if the difference of distance is too small, don't rotate
-			if(abs(speed_correction) < ROTATION_THRESHOLD){
-				speed_correction = 0;
-			}
-        }else{
-        	speed_correction = 0;
+			//computes the speed to give to the motors
+			//the value of the error is obtained from the mean of the collected samples
+			mean = get_mean_error(); //A SUPPRIMER
+        	speed = regulator(mean);
         }
 
-/*
-        if (j==5){
-			chprintf((BaseSequentialStream *)&SD3, "corr=%d LEFT=%d RIGHT=%d \r\n",speed_correction, ir_left, ir_right);
-			j=0;
-		}
-		j++;
-*/
+    	//compute speed correction to straighten the robot
+    	speed_correction = rotation_regulator(speed);
+
+		//chprintf((BaseSequentialStream *)&SD3, "mean_err=%f speed=%d \r\n", mean, speed);
+		//chprintf((BaseSequentialStream *)&SD3, "corr=%d LEFT=%d RIGHT=%d \r\n", speed_correction, ir_left, ir_right);
+
 
 		//checks if the robot is too close to the back wall
 		//in which case, it only allows the robot to move forward
@@ -104,12 +100,12 @@ static THD_FUNCTION(Regulator, arg) {
 			}
 		}
 
-        //applies the speed from the regulator and the correction for the rotation
-		right_motor_set_speed(speed- ROTATION_COEFF * speed_correction);
-		left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
+		//applies the speed from the regulator and the correction for the rotation
+		right_motor_set_speed(speed - speed_correction);
+		left_motor_set_speed(speed + speed_correction);
 
-        //10Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(100));
+        //100Hz
+        chThdSleepUntilWindowed(time, time + MS2ST(10));
     }
 }
 

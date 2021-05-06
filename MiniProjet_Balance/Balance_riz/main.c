@@ -61,11 +61,13 @@ static void timer12_start(void){
 
 int main(void)
 {
-
-    halInit();
+	halInit();
     chSysInit();
     mpu_init();
 
+	chThdSleepMilliseconds(700);
+
+    set_body_led(1);
     /** Inits the Inter Process Communication bus. */
     messagebus_init(&bus, &bus_lock, &bus_condvar);
 
@@ -89,15 +91,15 @@ int main(void)
     imu_compute_offset(imu_topic, NB_SAMPLES_OFFSET);
     imu_msg_t imu_values;
 */
+
     //calibrate acceleration sensor
     calibrate_acc();
     compute_accyz_offset();
 
-    set_body_led(1);
-
 	//calibrate IR proximity sensor
 	calibrate_ir();
 
+	set_body_led(0);
 	//stars the threads for the pi regulator
 	regulator_start();
 
