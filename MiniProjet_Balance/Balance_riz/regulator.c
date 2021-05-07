@@ -14,11 +14,13 @@
 //simple regulator implementation
 //error is zero under a certain threshold
 int16_t regulator(float error){
+	static float last_error = 0;
 	float speed = 0;
 	int8_t signe = ((error > 0) ? 1 : ((error < 0) ? -1 : 0));
 
-	speed = KP * error + signe * SPEED_MIN;
+	speed = KP * error; //+ signe * SPEED_MIN;
 
+	last_error = error;
     return (int16_t)speed;
 }
 

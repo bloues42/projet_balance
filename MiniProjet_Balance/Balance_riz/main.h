@@ -9,7 +9,7 @@ extern "C" {
 #include "parameter/parameter.h"
 #include <motors.h>
 
-#define KP						200.0f
+#define KP						600.0f
 #define KI						12.0f//3.5f
 #define SPEED_MIN				200
 #define MAX_SUM_ERROR			(MOTOR_SPEED_LIMIT/KI)
