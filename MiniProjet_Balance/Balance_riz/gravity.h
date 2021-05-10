@@ -1,41 +1,40 @@
-#ifndef IMU_H
-#define IMU_H
+#ifndef GRAVITY_H
+#define GRAVITY_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <hal.h>
-#include <sensors/mpu9250.h>
-//#include <msgbus/messagebus.h>
-//#include <sensors/imu.h>
+#include <sensors/mpu9250.h> //?????
+#include <sensors/imu.h>
 
-#define MARGIN_GRAV_Z  	0.08f	//A SUPPRIMER SI ON N'UTILISE PLUS
-#define ERR_MIN			0.06f
-#define DIFF_SIGN_MIN		5
 
-/** Message containing one measurement from the IMU. */
-typedef struct {
-    float acceleration[NB_AXIS]; // m/s^2
-    float gyro_rate[NB_AXIS]; // rad/s
-    float temperature;
-    float magnetometer[NB_AXIS]; //uT
-    int16_t acc_raw[NB_AXIS]; //raw values
-    int16_t gyro_raw[NB_AXIS]; //raw values
-    int16_t acc_offset[NB_AXIS]; //raw offsets
-    int16_t gyro_offset[NB_AXIS]; //raw offsets
-    int16_t acc_filtered[NB_AXIS];
-    int16_t gyro_filtered[NB_AXIS];
-    uint8_t status;
-} imu_msg_t;
-
+/*
+ * @brief This function is called in the calibration process.
+ * It gets the value of the acceleration offsets that will be used to compute correct values for the rest of the execution time.
+ */
 void compute_accyz_offset(void);
-float compute_gravity_y(void);
-float imu_compute_units(int8_t axis);
+
+
+//A REGARDER : FUSIONNER LES DEUX FONCTIONS QUI SUIVENT?
+
+/*
+ * @brief When called, this function collects the last measured value for the acceleration on the z axis.
+ * It counts how many samples have been collected :
+ * - if the value is NB_SAMPLES, it returns 1 and resets the sample count
+ * - otherwise, it returns 0
+ */
 bool collect_samples(void);
+
+
+/*
+ * @brief Computes mean acceleration error (difference between theoretical and measured value of gravity along z axis)
+ * from measurements done by collect_samples, from NB_SAMPLES. If not enough samples have been collected, it returns 0.
+ */
 float get_mean_error(void);
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* IMU_H */
+#endif /* GRAVITY_H */

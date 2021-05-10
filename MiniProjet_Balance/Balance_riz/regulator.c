@@ -7,21 +7,25 @@
 #include <chprintf.h>
 
 #include <gravity.h>
-#include <main.h>
 #include <motors.h>
 #include <sensors/proximity.h>
 
-//simple regulator implementation
-//input error is zero under a certain threshold
+/*
+ * @brief Proportional regulator for linear speed of the robot.
+ * The input error is zero under a certain threshold
+ */
 int16_t linear_regulator(float error){
 	float speed = 0;
-	//int8_t signe = ((error > 0) ? 1 : ((error < 0) ? -1 : 0));
 
-	speed = KP * error; //+ signe * SPEED_MIN;
+	speed = KP_LINEAR * error;
 
     return (int16_t)speed;
 }
 
+
+/*
+ * @brief Differential regulator for rotation.
+ */
 int16_t rotation_regulator(int16_t speed){
 	static uint16_t last_fr_right = 0;
 	static uint16_t last_fr_left = 0;
@@ -36,11 +40,11 @@ int16_t rotation_regulator(int16_t speed){
 	if(speed > 0){
 		//computes a correction factor to let the robot rotate in the middle of the platform
 		if(fr_left > fr_right){
-			speed_correction = ROTATION_COEFF * (fr_left-last_fr_left);
+			speed_correction = KD_ROTATION_FORWARD * (fr_left-last_fr_left);
 		}
 
 		if(fr_right > fr_left){
-			speed_correction = - ROTATION_COEFF * (fr_right-last_fr_right);
+			speed_correction = - KD_ROTATION_FORWARD * (fr_right-last_fr_right);
 		}
 
 		last_fr_left = fr_left;
@@ -60,11 +64,11 @@ int16_t rotation_regulator(int16_t speed){
 	else if(speed < 0){
 		//computes a correction factor to let the robot rotate in the middle of the platform
 		if(fr_left > fr_right){
-			speed_correction = - ROTATION_COEFF * (fr_left-last_fr_left);
+			speed_correction = - KD_ROTATION_BACK * (fr_left-last_fr_left);
 		}
 
 		if(fr_right > fr_left){
-			speed_correction = ROTATION_COEFF * (fr_right-last_fr_right);
+			speed_correction = KD_ROTATION_BACK * (fr_right-last_fr_right);
 		}
 
 		last_fr_left = fr_left;
@@ -81,7 +85,6 @@ int16_t rotation_regulator(int16_t speed){
 		speed_correction = 0;
 	}
 
-	//chprintf((BaseSequentialStream *)&SD3, "frontleft=%d   frontright=%d    correction=%f \r\n", fr_left, fr_right, speed_correction);
     return (int16_t)speed_correction;
 }
 
@@ -94,8 +97,6 @@ static THD_FUNCTION(Regulator, arg) {
     systime_t time;
     static int16_t speed = 0;
     int16_t speed_correction = 0;
-    //int32_t ir_back;
-
 
     while(1){
         time = chVTGetSystemTime();
@@ -103,7 +104,6 @@ static THD_FUNCTION(Regulator, arg) {
         //the function collect samples returns 1 if it has collected all the samples it needs to compute the mean
         //else, it returns 0
         if(collect_samples()){
-
 			//computes the speed to give to the motors
 			//the value of the error is obtained from the mean of the collected samples
         	speed = linear_regulator(get_mean_error());
@@ -111,36 +111,8 @@ static THD_FUNCTION(Regulator, arg) {
         }
 
 
-
-/* ALLER_RETOUR
-        if(j<=300){
-			speed = -1;
-			j++;
-		}
-		else if(j>300){
-			speed = 1;
-			j++;
-		}
-        if(j==600){
-        	j=0;
-        }
-
-        if(k==10){
-    	//compute speed correction to straighten the robot
-        	speed_correction = rotation_regulator(speed);
-    		//chprintf((BaseSequentialStream *)&SD3, "frontleft=%d   frontright=%d    correction=%d \r\n", get_calibrated_prox(IR_FRONT_LEFT45), get_calibrated_prox(IR_FRONT_RIGHT45), speed_correction);
-    		k=0;
-    	}
-    	 k++;
-*/
-		//chprintf((BaseSequentialStream *)&SD3, "mean_err=%f speed=%d \r\n", mean, speed);
-		//chprintf((BaseSequentialStream *)&SD3, "frontleft=%d   frontright=%d    LEFT=%d   RIGHT=%d \r\n", get_calibrated_prox(IR_FRONT_LEFT45), get_calibrated_prox(IR_FRONT_RIGHT45), get_calibrated_prox(IR_LEFT),get_calibrated_prox(IR_RIGHT));
-
-
-
 		//checks if the robot is too close to the back wall
 		//in which case, it only allows the robot to move forward
-		//ir_back = (get_calibrated_prox(IR_BACK_LEFT) + get_calibrated_prox(IR_BACK_RIGHT))/2;
 		if((get_calibrated_prox(IR_BACK_LEFT) > BACK_WALL_STOP) && (get_calibrated_prox(IR_BACK_RIGHT) > BACK_WALL_STOP)){
 			if(speed < 0){
 				speed = 0;
@@ -152,13 +124,8 @@ static THD_FUNCTION(Regulator, arg) {
 		right_motor_set_speed(speed - speed_correction);
 		left_motor_set_speed(speed + speed_correction);
 
-
-
-		//right_motor_set_speed(500*speed - speed_correction);
-		//left_motor_set_speed(500*speed + speed_correction);
-
-        //50Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(20));
+        //100Hz
+        chThdSleepUntilWindowed(time, time + MS2ST(10));
     }
 }
 

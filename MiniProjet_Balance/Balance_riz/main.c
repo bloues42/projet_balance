@@ -1,26 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
 #include <usbcfg.h>
 #include <main.h>
-#include <chprintf.h>
-#include <motors.h>
-#include <gravity.h>
 
-#include <sensors/imu.h>
 #include <leds.h>
-#include <regulator.h>
+#include <motors.h>
 #include <sensors/proximity.h>
+#include <sensors/imu.h>
+
+#include <regulator.h>
+#include <gravity.h>
 
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
 
+//besoin???
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -70,6 +70,7 @@ int main(void)
 	calibrate_ir();
 
 	set_body_led(0);
+
 	//stars the threads for the pi regulator
 	regulator_start();
 
