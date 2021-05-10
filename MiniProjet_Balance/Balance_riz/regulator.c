@@ -12,15 +12,13 @@
 #include <sensors/proximity.h>
 
 //simple regulator implementation
-//error is zero under a certain threshold
-int16_t regulator(float error){
-	static float last_error = 0;
+//input error is zero under a certain threshold
+int16_t linear_regulator(float error){
 	float speed = 0;
-	int8_t signe = ((error > 0) ? 1 : ((error < 0) ? -1 : 0));
+	//int8_t signe = ((error > 0) ? 1 : ((error < 0) ? -1 : 0));
 
 	speed = KP * error; //+ signe * SPEED_MIN;
 
-	last_error = error;
     return (int16_t)speed;
 }
 
@@ -28,17 +26,12 @@ int16_t rotation_regulator(int16_t speed){
 	static uint16_t last_fr_right = 0;
 	static uint16_t last_fr_left = 0;
 	float speed_correction = 0;
-	uint16_t rot_error;
-	int32_t fr_left = 0, fr_right = 0, left = 0, right = 0;
 
-	//ir_left = get_calibrated_prox(IR_LEFT);
-	//ir_right = get_calibrated_prox(IR_RIGHT);
+	int32_t left = get_calibrated_prox(IR_LEFT);
+	int32_t right = get_calibrated_prox(IR_RIGHT);
 
-	left = get_calibrated_prox(IR_LEFT);
-	right = get_calibrated_prox(IR_RIGHT);
-
-	fr_left = get_calibrated_prox(IR_FRONT_LEFT45);
-	fr_right = get_calibrated_prox(IR_FRONT_RIGHT45);
+	int32_t fr_left = get_calibrated_prox(IR_FRONT_LEFT45);
+	int32_t fr_right = get_calibrated_prox(IR_FRONT_RIGHT45);
 
 	if(speed > 0){
 		//computes a correction factor to let the robot rotate in the middle of the platform
@@ -88,11 +81,7 @@ int16_t rotation_regulator(int16_t speed){
 		speed_correction = 0;
 	}
 
-	//speed_correction = ROTATION_COEFF * (rot_error-last_rot_error);
-
-	//last_rot_error = rot_error;
-
-	chprintf((BaseSequentialStream *)&SD3, "frontleft=%d   frontright=%d    correction=%f \r\n", fr_left, fr_right, speed_correction);
+	//chprintf((BaseSequentialStream *)&SD3, "frontleft=%d   frontright=%d    correction=%f \r\n", fr_left, fr_right, speed_correction);
     return (int16_t)speed_correction;
 }
 
@@ -105,8 +94,7 @@ static THD_FUNCTION(Regulator, arg) {
     systime_t time;
     static int16_t speed = 0;
     int16_t speed_correction = 0;
-    static uint16_t j = 0, k = 0;
-    int32_t ir_back;
+    //int32_t ir_back;
 
 
     while(1){
@@ -118,9 +106,11 @@ static THD_FUNCTION(Regulator, arg) {
 
 			//computes the speed to give to the motors
 			//the value of the error is obtained from the mean of the collected samples
-        	speed = regulator(get_mean_error());
+        	speed = linear_regulator(get_mean_error());
         	speed_correction = rotation_regulator(speed);
         }
+
+
 
 /* ALLER_RETOUR
         if(j<=300){
@@ -150,8 +140,8 @@ static THD_FUNCTION(Regulator, arg) {
 
 		//checks if the robot is too close to the back wall
 		//in which case, it only allows the robot to move forward
-		ir_back = (get_calibrated_prox(IR_BACK_LEFT) + get_calibrated_prox(IR_BACK_RIGHT))/2;
-		if(ir_back > BACK_WALL_STOP){
+		//ir_back = (get_calibrated_prox(IR_BACK_LEFT) + get_calibrated_prox(IR_BACK_RIGHT))/2;
+		if((get_calibrated_prox(IR_BACK_LEFT) > BACK_WALL_STOP) && (get_calibrated_prox(IR_BACK_RIGHT) > BACK_WALL_STOP)){
 			if(speed < 0){
 				speed = 0;
 				speed_correction = 0;
@@ -167,8 +157,8 @@ static THD_FUNCTION(Regulator, arg) {
 		//right_motor_set_speed(500*speed - speed_correction);
 		//left_motor_set_speed(500*speed + speed_correction);
 
-        //100Hz
-        chThdSleepUntilWindowed(time, time + MS2ST(10));
+        //50Hz
+        chThdSleepUntilWindowed(time, time + MS2ST(20));
     }
 }
 
