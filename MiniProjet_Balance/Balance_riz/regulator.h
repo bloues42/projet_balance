@@ -1,6 +1,9 @@
 #ifndef REGULATOR_H
 #define REGULATOR_H
 
+#include <motors.h>
+#include <sensors/proximity.h>
+
 #define KP_LINEAR				2000.0f
 #define SPEED_MIN				200
 #define ROTATION_THRESHOLD		5

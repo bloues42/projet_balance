@@ -5,13 +5,9 @@
 #include "ch.h"
 #include "hal.h"
 #include "memory_protection.h"
-#include <usbcfg.h>
 #include <main.h>
 
 #include <leds.h>
-#include <motors.h>
-#include <sensors/proximity.h>
-#include <sensors/imu.h>
 
 #include <regulator.h>
 #include <gravity.h>
@@ -19,19 +15,6 @@
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
-
-//besoin???
-static void serial_start(void)
-{
-	static SerialConfig ser_cfg = {
-	    115200,
-	    0,
-	    0,
-	    0,
-	};
-
-	sdStart(&SD3, &ser_cfg); // UART3.
-}
 
 
 int main(void)
@@ -48,11 +31,6 @@ int main(void)
 
     /** Inits the Inter Process Communication bus. */
     messagebus_init(&bus, &bus_lock, &bus_condvar);
-
-    //starts the serial communication
-    serial_start();
-    //starts the USB communication
-    usb_start();
 
     //inits the motors
     motors_init();

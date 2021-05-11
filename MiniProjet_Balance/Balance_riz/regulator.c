@@ -3,12 +3,8 @@
 #include "ch.h"
 #include "hal.h"
 #include <math.h>
-#include <usbcfg.h>
-#include <chprintf.h>
 
 #include <gravity.h>
-#include <motors.h>
-#include <sensors/proximity.h>
 
 /*
  * @brief Proportional regulator for linear speed of the robot.

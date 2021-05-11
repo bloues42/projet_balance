@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 #include <hal.h>
-#include <sensors/mpu9250.h> //?????
 #include <sensors/imu.h>
 
 
