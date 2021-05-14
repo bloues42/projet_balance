@@ -15,7 +15,9 @@
 enum	IR_sensor_pos{IR_FRONT_RIGHT=0, IR_FRONT_RIGHT45, IR_RIGHT, IR_BACK_RIGHT,
 						IR_BACK_LEFT, IR_LEFT, IR_FRONT_LEFT45, IR_FRONT_LEFT};
 
-//start the regulator thread
+/*
+ * @brief Start the regulator thread
+ */
 void regulator_start(void);
 
 #endif /* REGULATOR_H */

@@ -11,11 +11,13 @@
  * The input error is zero under a certain threshold
  */
 int16_t linear_regulator(float error){
+	/*
 	float speed = 0;
-
 	speed = KP_LINEAR * error;
 
     return (int16_t)speed;
+    */
+	return (int16_t)(KP_LINEAR*error);
 }
 
 
@@ -34,7 +36,7 @@ int16_t rotation_regulator(int16_t speed){
 	int32_t fr_right = get_calibrated_prox(IR_FRONT_RIGHT45);
 
 	if(speed > 0){
-		//computes a correction factor to let the robot rotate in the middle of the platform
+	//using the value from the sensor closest to a side, to have better sensitivity
 		if(fr_left > fr_right){
 			speed_correction = KD_ROTATION_FORWARD * (fr_left-last_fr_left);
 		}
@@ -46,6 +48,7 @@ int16_t rotation_regulator(int16_t speed){
 		last_fr_left = fr_left;
 		last_fr_right = fr_right;
 
+	//checking if too close to a side wall, in which case no turning towards the wall
 		if((left > SIDE_STOP) && (speed_correction < 0)){
 			speed_correction = 0;
 		}
@@ -58,7 +61,7 @@ int16_t rotation_regulator(int16_t speed){
 
 
 	else if(speed < 0){
-		//computes a correction factor to let the robot rotate in the middle of the platform
+	//using the value from the sensor closest to a side, to have better sensitivity
 		if(fr_left > fr_right){
 			speed_correction = - KD_ROTATION_BACK * (fr_left-last_fr_left);
 		}
@@ -70,6 +73,7 @@ int16_t rotation_regulator(int16_t speed){
 		last_fr_left = fr_left;
 		last_fr_right = fr_right;
 
+	//checking if too close to a side wall, in which case no turning towards the wall
 		if((left > SIDE_STOP) && (speed_correction > 0)){
 			speed_correction = 0;
 		}

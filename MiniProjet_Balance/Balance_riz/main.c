@@ -24,6 +24,7 @@ int main(void)
     chSysInit();
     mpu_init();
 
+    //gives us time to pull away from the robot so that the calibration can be done properly
 	chThdSleepMilliseconds(700);
 
 	//turns on the body LED, it will be turned off when the calibration is done and the robot can be used
@@ -48,6 +49,7 @@ int main(void)
 	//calibrate IR proximity sensor
 	calibrate_ir();
 
+	//turns off body led because calibration is over, meaning the robot can be moved
 	set_body_led(0);
 
 	//stars the threads for the pi regulator
@@ -58,7 +60,9 @@ int main(void)
     }
 }
 
-
+/*
+ * CODE TAKEN FROM TP4
+ */
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 

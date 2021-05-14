@@ -7,22 +7,27 @@
 #include <hal.h>
 #include <math.h>
 
-
+/*
+ * The defines are partially from TP3 code.
+ */
 #define STANDARD_GRAVITY    9.80665f
 #define RES_2G				2.0f
 #define MAX_INT16			32768.0f
 #define ACC_RAW2G			(RES_2G / MAX_INT16)
 
 #define NB_SAMPLES			10
+#define DIFF_SIGN_MIN		NB_SAMPLES/2
 #define MARGIN_GRAV_Z  		0.045f	//c'était à 0.045
-#define DIFF_SIGN_MIN		5
+#define STANDARD_DEVIATION	0.035
 
+/***************************MODULE STATIC VARIABLES************************************/
 static int16_t acc_offset_y = 0, acc_offset_z = 0;
 static float grav_y = 0;
 static float mean_error = 0;
 static float sum_grav_z = 0;
 static bool still_moving = 1;
 static bool all_samples_collected = 0;
+
 
 /***************************INTERNAL FUNCTIONS************************************/
 
@@ -55,13 +60,16 @@ void compute_accyz_offset(void){
 }
 
 
-//we check two conditions :
-// - if the acceleration measured in z is within a certain margin of the standard gravity
-// - if the acceleration measured in z is larger than standard gravity (meaning there's been an external acceleration that disturbed the measurement)
-// in either of these cases, we keep the previous value of the error
-// else, we update the value
-// The purpose of these conditions is to ensure that equilibrium is reached before stopping.
-// Thus we only change the error to 0 if the previous error was already 0.
+/*
+ * For each sample, we check if the acceleration measured in z is larger than standard gravity (meaning there's been
+ * an external acceleration that disturbed the measurement)
+ * 	 -> we only take the samples with a magnitude smaller than STANDARD_GRAVITY
+ *
+ * For each group of NB_SAMPLES, we check if there are significantly more samples measured while the acceleration
+ * in y was positive (nb_pos) rather than negative (nb_neg) or vice versa
+ * 	 -> too similar nb_neg and nb_pos might indicate oscillation, meaning the robot is horizontal (or close enough)
+ * 	 -> we only update the value if |nb_pos-nb_neg| > DIFF_SIGN_MIN
+ */
 bool collect_samples(void){
 	static uint8_t samples_collected_nb = 0;
 	static uint8_t nb_neg = 0, nb_pos = 0;
@@ -94,6 +102,13 @@ bool collect_samples(void){
 	return 0;
 }
 
+//A REFORMULER + ON POURRAIT UTILISER DES RETURN DANS LES CONDITIONS, NON?
+/*
+ * After computing the mean of the sampled errors, we check whether it's within a certain margin of zero. The margin
+ * is asymmetrical because we determined experimentally that it works better that way. A CHANGER
+ * If it's close to zero, we check if the previous value also was, in which case we return a value of 0 (meaning stop).
+ * The purpose of these conditions is to ensure that equilibrium is reached before stopping.
+ */
 float get_mean_error(void){
 	if(!(all_samples_collected)){
 		return 0;
@@ -101,7 +116,7 @@ float get_mean_error(void){
 	float mean_temp = (sum_grav_z/NB_SAMPLES);
 	sum_grav_z = 0;
 
-	if((fabs(mean_temp) < MARGIN_GRAV_Z)){
+	if((mean_temp < MARGIN_GRAV_Z+STANDARD_DEVIATION) && (mean_temp > -MARGIN_GRAV_Z+STANDARD_DEVIATION)){
 		if(still_moving == 0){
 			mean_error = 0;
 		}else{
