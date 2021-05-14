@@ -11,12 +11,6 @@
  * The input error is zero under a certain threshold
  */
 int16_t linear_regulator(float error){
-	/*
-	float speed = 0;
-	speed = KP_LINEAR * error;
-
-    return (int16_t)speed;
-    */
 	return (int16_t)(KP_LINEAR*error);
 }
 
