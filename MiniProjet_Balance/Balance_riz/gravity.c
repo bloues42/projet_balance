@@ -17,8 +17,8 @@
 
 #define NB_SAMPLES			10
 #define DIFF_SIGN_MIN		NB_SAMPLES/2
-#define MARGIN_GRAV_Z  		0.045f	//c'était à 0.045
-#define STANDARD_DEVIATION	0.035
+#define MARGIN_GRAV_Z  		0.045f
+#define THRESHOLD_SHIFT		0.035
 
 /***************************MODULE STATIC VARIABLES************************************/
 static int16_t acc_offset_y = 0, acc_offset_z = 0;
@@ -116,7 +116,7 @@ float get_mean_error(void){
 	float mean_temp = (sum_grav_z/NB_SAMPLES);
 	sum_grav_z = 0;
 
-	if((mean_temp < MARGIN_GRAV_Z+STANDARD_DEVIATION) && (mean_temp > -MARGIN_GRAV_Z+STANDARD_DEVIATION)){
+	if((mean_temp < MARGIN_GRAV_Z+THRESHOLD_SHIFT) && (mean_temp > -MARGIN_GRAV_Z+THRESHOLD_SHIFT)){
 		if(still_moving == 0){
 			mean_error = 0;
 		}else{
