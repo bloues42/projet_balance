@@ -67,8 +67,8 @@ void compute_accyz_offset(void){
  *
  * For each group of NB_SAMPLES, we check if there are significantly more samples measured while the acceleration
  * in y was positive (nb_pos) rather than negative (nb_neg) or vice versa
- * 	 -> too similar nb_neg and nb_pos might indicate oscillation, meaning the robot is horizontal (or close enough)
- * 	 -> we only update the value if |nb_pos-nb_neg| > DIFF_SIGN_MIN
+ * 	 -> too similar nb_neg and nb_pos (|nb_pos-nb_neg| < DIFF_SIGN_MIN) might indicate oscillation
+ * 	 	so sum_grav_z is set to 0
  */
 bool collect_samples(void){
 	static uint8_t samples_collected_nb = 0;
@@ -102,12 +102,11 @@ bool collect_samples(void){
 	return 0;
 }
 
-//A REFORMULER + ON POURRAIT UTILISER DES RETURN DANS LES CONDITIONS, NON?
 /*
- * After computing the mean of the sampled errors, we check whether it's within a certain margin of zero. The margin
- * is asymmetrical because we determined experimentally that it works better that way. A CHANGER
- * If it's close to zero, we check if the previous value also was, in which case we return a value of 0 (meaning stop).
- * The purpose of these conditions is to ensure that equilibrium is reached before stopping.
+ * Computes the mean of the sampled errors, mean_error.
+ * Then checks whether it's within a certain domain around zero (the domain is asymmetrical).
+ * To ensure that equilibrium is reached before stopping the robot, mean_error has to have been set to zero
+ * for two consecutive function calls, in which case the function returns zero (indicating the motors will stop).
  */
 float get_mean_error(void){
 	if(!(all_samples_collected)){
