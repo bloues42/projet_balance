@@ -69,6 +69,7 @@ void compute_accyz_offset(void){
  * in y was positive (nb_pos) rather than negative (nb_neg) or vice versa
  * 	 -> too similar nb_neg and nb_pos (|nb_pos-nb_neg| < DIFF_SIGN_MIN) might indicate oscillation
  * 	 	so sum_grav_z is set to 0
+ * 
  */
 bool collect_samples(void){
 	static uint8_t samples_collected_nb = 0;
